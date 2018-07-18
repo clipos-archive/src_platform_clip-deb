@@ -1,0 +1,44 @@
+.\" Process this file with
+.\" groff -man -Tascii bin-pkg-create.1
+.\"
+.TH BIN-PKG-CREATE 1 "AUGUST 2007" Linux "User Manuals"
+.SH NAME
+bin-pkg-create \- creates a binary package 
+.SH SYNOPSIS
+.B bin-pkg-create [-h] [-v] [-r] [-i] -p 
+.I pkg
+.B -o
+.I dir
+.B -u
+.I urgency
+.SH DESCRIPTION
+.B bin-pkg-create
+creates the binary package of
+.I pkg
+in the  
+.I dir
+directory.
+.I urgency
+specifies the last urgent version of the package.
+.SH MANDATORY PARAMETERS
+.IP "-p pkg"
+Specify the binary package to create.
+.IP "-o dir"
+Give the output directory where the binary package should be created.
+.IP "-u urgency"
+Indicate the last urgent version of the package.
+.SH OPTIONS
+.IP -h
+Display the help of the command.
+.IP -v
+Display the version of the tool.
+.IP "-i"
+Indicate a high impact (default is low).
+.IP "-r"
+Indicate a required package (default is important).
+.SH RETURN VALUE
+In case of error, 1 is returned. Otherwise, the command returns 0.
+.SH AUTHOR
+EADS Defence And Security Systems
+.SH "SEE ALSO"
+.BR src-pkg-create (1)

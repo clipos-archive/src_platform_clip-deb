@@ -1,0 +1,44 @@
+.\" Process this file with
+.\" groff -man -Tascii src-pkg-create.1
+.\"
+.TH SRC-PKG-CREATE 1 "AUGUST 2007" Linux "User Manuals"
+.SH NAME
+src-pkg-create \- creates a source package 
+.SH SYNOPSIS
+.B src-pkg-create [-h] [-v] [-r] [-i] -p 
+.I pkg
+.B -o
+.I dir
+.B -u
+.I urgency
+.SH DESCRIPTION
+.B src-pkg-create
+creates the source package of
+.I pkg
+in the  
+.I dir
+directory.
+.I urgency
+specifies the last urgent version of the package.
+.SH MANDATORY PARAMETERS
+.IP "-p pkg"
+Specify the source package to create.
+.IP "-o dir"
+Give the output directory where the source package should be created.
+.IP "-u urgency"
+Indicate the last urgent version of the package.
+.SH OPTIONS
+.IP -h
+Display the help of the command.
+.IP -v
+Display the version of the tool.
+.IP "-i"
+Indicate a high impact (default is low).
+.IP "-r"
+Indicate a required package (default is important).
+.SH RETURN VALUE
+In case of error, 1 is returned. Otherwise, the command returns 0.
+.SH AUTHOR
+EADS Defence And Security Systems
+.SH "SEE ALSO"
+.BR bin-pkg-create (1)

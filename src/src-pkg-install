@@ -1,0 +1,195 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright © 2007-2018 ANSSI. All Rights Reserved.
+# CLIP pkg mngt tool
+# Author: EADS
+set -e
+#set -x
+
+# Global variables
+g_pkg_name=""
+g_private_key=""
+
+################################
+# Function : usage
+# Display the usage of the tool
+################################
+usage () {
+	echo "Usage :"$0" -hvidp"
+	echo ""
+	echo "Extracts the content of a source package into the given directories"
+	echo ""
+	echo "Mandatory parameters :"
+	echo "	-i pkg or -ipkg		Give the package fullname (pkg)"
+	echo "	-k key or -kkey         Give the private key used to connect the CCSD library (key)"  
+	echo ""
+	echo "Options :"
+	echo "	-d distdir or -ddistdir	Specify the distfile directory (distdir): current value by default" 
+	echo "	-p portdir or -pportdir	Give the portage directory (portdir): current value by default" 
+	echo "	-h			Display this help"
+	echo "	-v			Display the version of the tool"
+}
+
+################################
+# Function : version
+# Display the version of the tool
+################################
+version () {
+	echo "Version 1.1.3"
+}
+
+################################
+# Function : error_treatment
+# Error treatment 
+################################
+error_treatment () {
+	echo "error during the execution of ["$1"]"
+
+	exit 1
+}
+
+################################
+# Function : verify_dir
+# Does the directory exist ?
+################################
+verify_dir () {
+	if [ ! -d $1 ]
+	then
+		echo "Directory "$1" does not exist"
+
+		exit 1
+	fi
+}
+
+################################
+# Function : verify_file
+# Does the file exist ?
+################################
+verify_file () {
+	if [ ! -f $1 ]
+	then
+		echo "File "$1" does not exist"
+
+		exit 1
+	fi
+}
+
+################################
+# Main
+################################
+
+# Parsing the options
+while getopts hvi:d:p:k: f 
+do
+	case $f in
+	k)
+		g_private_key=$OPTARG;;
+	i)
+		g_pkg_name=$OPTARG;;
+	d)
+		g_distdir=$OPTARG;;
+	p)
+		g_portdir=$OPTARG;;
+	h)
+		usage
+		exit 0
+		;;
+	v)
+		version
+		exit 0
+		;;
+	\?)
+		usage
+		exit 1
+		;;
+	esac
+done
+
+#shift 'expr $OPTIND - 1'
+
+# get the private key password file
+g_private_password=$g_private_key".txt"
+
+# Verify the parameters
+if [ "$g_pkg_name" = "" ]
+then
+	echo "Package name undefined"
+	usage
+	exit 1
+fi
+
+if [ "$g_distdir" = "" ]
+then
+	echo "Distfile directory undefined"
+	echo "Getting portage information"
+	g_distdir=`emerge --info | grep DISTDIR | sed "s/^.*=\"//" | sed "s/\"$//"`
+
+	if [ "$g_distdir" = "" ]
+	then
+		usage
+		exit 1
+	fi
+	echo "Portage information retrieved (DISTDIR = $g_distdir)"
+fi
+
+if [ "$g_portdir" = "" ]
+then
+	echo "Portage directory undefined"
+	echo "Getting portage information"
+	g_portdir=`emerge --info | grep PORTDIR_OVERLAY | sed "s/^.*=\"//" | sed "s/\"$//" | awk '{print $1}'`
+
+	if [ "$g_portdir" = "" ]
+	then
+		usage
+		exit 1
+	fi
+	echo "Portage information retrieved (PORTDIR_OVERLAY = $g_portdir)"
+fi
+
+if [ "$g_private_key" = "" ]
+then
+	echo "Private key undefined"
+	usage
+	exit 1
+fi
+
+verify_file $g_pkg_name
+verify_file $g_private_key
+verify_file $g_private_password
+verify_dir $g_distdir
+verify_dir $g_portdir
+
+# Verify the name of the package
+if [ "${g_pkg_name%%.deb}" = "$g_pkg_name" ]
+then
+	echo "Invalid package name : "$g_pkg_name
+	exit 1
+elif [ "${g_pkg_name%%.src.deb}" = "$g_pkg_name" ]
+then
+	echo "Invalid package type : you can not install a binary package with this tool"
+	exit 1
+fi
+
+# Signature verification
+echo "Signature verification of the package "$g_pkg_name
+
+verify-sign -i $g_pkg_name --pvr $g_private_key 2>&1 || error_treatment "verify_sign -i $g_pkg_name --pvr $g_private_key"
+
+# Extraction
+echo "Installation of the package in "$g_distdir" and "$g_portdir
+g_category=`dpkg -f $g_pkg_name section`
+g_package=`dpkg -f $g_pkg_name package`
+
+g_portdir=$g_portdir/$g_category/$g_package
+
+mkdir -p $g_portdir
+
+ar p $g_pkg_name data.tar.gz | tar xz 
+
+tar zxf pack.tar.gz -C $g_portdir >/dev/null 2>&1 || error_treatment "tar zxf pack.tar.gz -C $g_portdir"
+
+tar zxf distfile.tar.gz -C $g_distdir >/dev/null 2>&1 || error_treatment "tar zxf distfile.tar.gz -C $g_distdir"
+
+rm -f pack.tar.gz distfile.tar.gz
+
+exit 0

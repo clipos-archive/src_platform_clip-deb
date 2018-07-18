@@ -1,0 +1,47 @@
+.\" Process this file with
+.\" groff -man -Tascii pkg-sign.1
+.\"
+.TH PKG-SIGN 1 "AUGUST 2007" Linux "User Manuals"
+.SH NAME
+pkg-sign \- signs a package 
+.SH SYNOPSIS
+.B pkg-sign [-h] [-v] [-c 
+.I cert
+.B ] [-k
+.I key
+.B ] -i
+.I input-package
+.B -r
+.I svn-repository
+.SH DESCRIPTION
+.B pkg-sign
+signs
+.I input-package
+using 
+.I key
+private key file and
+.I cert
+public key file, then imports the signed package into the
+.I svn-repository
+Subversion repository.
+The users allowed to sign a package are the developpers : they are recognized thanks to their private key filenames.
+.SH MANDATORY PARAMETERS
+.IP "-i input-package"
+Specify the input package to sign.
+.IP "-r svn-repository"
+Give the Subversion repository URL where the obtained signed package must be stored.
+.SH OPTIONS
+.IP -h
+Display the help of the command.
+.IP -v
+Display the version of the tool.
+.IP "-k key"
+Specify the CCSD private key used to sign the input package.
+.IP "-c cert"
+Specify the public key of the user who makes the signature.
+.SH RETURN VALUE
+In case of error, 1 is returned. Otherwise, the command returns 0.
+.SH AUTHOR
+EADS Defence And Security Systems
+.SH "SEE ALSO"
+.BR create-sign (1)

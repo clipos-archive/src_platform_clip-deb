@@ -1,0 +1,135 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright © 2007-2018 ANSSI. All Rights Reserved.
+# CLIP pkg mngt tool
+# Author: EADS
+set -e
+#set -x
+
+# Global variables
+g_pkg_name=""
+g_output_dir=""
+g_impact="0"
+g_urgency=""
+g_priority="Important"
+
+################################
+# Function : verify_dir
+# Does the directory exist ?
+################################
+verify_dir () {
+        if [ ! -d $1 ]
+        then
+                echo "Directory "$1" does not exist"
+
+		exit 1
+	fi
+}
+
+
+#################################
+# Function : usage
+# Display the usage of the tool
+################################
+usage () {
+	echo "Usage : src-pkg-create parameters [options]"
+	echo ""
+	echo "Create the given source package using the emerge command"
+	echo ""
+	echo "Mandatory parameters :"
+	echo "	-p pkg or -ppkg		Give the package fullname (pkg)"
+	echo "	-o out or -oout		Give the output directory (out)"
+	echo "	-uversion -u version	Give the last urgent version (version)" 
+	echo ""
+	echo "Options :"
+	echo "	-i			Indicate a high impact (default is low)" 
+	echo "	-r			Indicate a required package (default is Important)" 
+	echo "	-h			Display this help"
+	echo "	-v			Display the version of the tool"
+}
+
+################################
+# Function : version
+# Display the version of the tool
+################################
+version () {
+	echo "Version 1.1.3"
+}
+
+################################
+# Function : error_treatment
+# Error treatment 
+################################
+error_treatment () {
+	echo "error during the execution of ["$1"]"
+
+	exit 1
+}
+
+################################
+# Main
+################################
+
+# Parsing the options
+while getopts hvrip:o:u: f 
+do
+	case $f in
+	p)
+		g_pkg_name=$OPTARG;;
+	r)
+		g_priority="Required";;
+	u)
+		g_urgency=$OPTARG;;
+	o)
+		g_output_dir=$OPTARG;;
+	i)
+		g_impact="1";;
+	h)
+		usage
+		exit 0
+		;;
+	v)
+		version
+		exit 0
+		;;
+	\?)
+		usage
+		exit 1
+		;;
+	esac
+done
+
+#shift 'expr $OPTIND - 1'
+
+# Verify the parameters
+if [ "$g_pkg_name" = "" ]
+then
+	echo "Package name undefined"
+	usage
+	exit 1
+fi
+
+if [ "$g_output_dir" = "" ]
+then
+	echo "Output directory undefined"
+	usage
+	exit 1
+fi
+
+verify_dir $g_output_dir
+
+if [ "$g_urgency" = "" ]
+then
+	echo "Urgency undefined"
+	exit 1
+fi
+
+# Position the env variables
+export CLIP_PRIORITY="$g_priority"
+export CLIP_IMPACT="$g_impact"
+export CLIP_URGENCY="$g_urgency"
+export DEBDIR="$g_output_dir"
+
+emerge -OR $g_pkg_name 
+
+exit 0

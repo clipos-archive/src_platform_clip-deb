@@ -1,0 +1,193 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0
+# Copyright © 2007-2018 ANSSI. All Rights Reserved.
+# CLIP pkg mngt tool
+# Author: EADS
+set -e
+#set -x
+
+# Global variables
+g_pkg_name=""
+g_repository_svn=""
+g_public_key=$HOME/`whoami`".ppr"
+g_private_key=$HOME/`whoami`".pvr"
+g_cryptolib_private_key_file=""
+g_force=""
+
+################################
+# Function : usage
+# Display the usage of the tool
+################################
+usage () {
+	echo "Usage :"$0" -hvirklc"
+	echo ""
+	echo "Validates a given package and import it into the given Subversion repository"
+	echo ""
+	echo "Mandatory parameters :"
+	echo "	-i pkg or -ipkg		Give the package fullname (pkg)"
+	echo "	-r repo or -rrepo	Give the repository full URL (repo)"
+	echo "	-l crypto-lib-key	Give the key to connect the cryptographic library"
+	echo ""
+	echo "Options :"
+	echo "	-c cert or -ccert	Give the public key file fullname (cert) : "$g_public_key" by default" 
+	echo "	-k key or -kkey		Give the private key file fullname (key) : "$g_private_key" by default" 
+	echo "	-h			Display this help"
+	echo "	-v			Display the version of the tool"
+	echo "  -f                      Force overwrite in svn"
+}
+
+################################
+# Function : version
+# Display the version of the tool
+################################
+version () {
+	echo "Version 1.2.1"
+}
+
+################################
+# Function : error_treatment
+# Error treatment 
+################################
+error_treatment () {
+	echo "error during the execution of ["$1"]"
+
+	exit 1
+}
+
+################################
+# Function : verify_file
+# Does the file exist ?
+################################
+verify_file () {
+	if [ ! -f $1 ]
+	then
+		echo "File "$1" does not exist"
+
+		exit 1
+	fi
+}
+
+################################
+# Function : error_repo
+# The repo does no exist ?
+################################
+erreur_repo () {
+	echo "Impossible to connect to the repository "$1
+	
+	exit 1
+}
+
+################################
+# Function : verify_repo
+# Does the repo exist ?
+################################
+verify_repo ()
+{
+	echo "Verification of the repository $1"
+	svn list --non-interactive $1 > /dev/null 2>&1 || erreur_repo $1 
+	echo "Repository OK"
+}
+
+################################
+# Main
+################################
+
+# Parsing the options
+while getopts hvl:i:r:k:c:f f 
+do
+	case $f in
+	i)
+		g_pkg_name=$OPTARG;;
+	l)
+		g_cryptolib_private_key_file=$OPTARG;;
+	r)
+		g_repository_svn=$OPTARG;;
+	c)
+		g_public_key=$OPTARG;;
+	k)
+		g_private_key=$OPTARG;;
+	h)
+		usage
+		exit 0
+		;;
+	f)
+		g_force="-f";;
+	v)
+		version
+		exit 0
+		;;
+	\?)
+		usage
+		exit 1
+		;;
+	esac
+done
+
+#shift 'expr $OPTIND - 1'
+
+# Verify the parameters
+if [ "$g_pkg_name" = "" ]
+then
+	echo "Package name undefined"
+	usage
+	exit 1
+fi
+
+if [ "$g_cryptolib_private_key_file" = "" ]
+then
+        echo "Cryptographical connection key undefined"
+        usage
+        exit 1
+fi
+
+if [ "$g_repository_svn" = "" ]
+then
+	echo "Subversion repository undefined"
+	usage
+	exit 1
+fi
+
+if [ "$g_public_key" = "" ]
+then
+	echo "Public key undefined"
+	usage
+	exit 1
+fi
+
+if [ "$g_private_key" = "" ]
+then
+	echo "Private key undefined"
+	usage
+	exit 1
+fi
+
+verify_file $g_pkg_name
+verify_file $g_cryptolib_private_key_file
+verify_file $g_public_key
+verify_file $g_private_key
+verify_repo $g_repository_svn 
+
+# Verify the name of the package
+if [ "${g_pkg_name%%.deb}" = "$g_pkg_name" ]
+then
+	echo "Invalid package name : "$g_pkg_name
+	exit 1
+elif [ "${g_pkg_name%%.src.deb}" = "$g_pkg_name" ]
+then
+	g_pkg_type="binary"
+else
+	echo "Invalid package type : you can not validate a source package"
+	exit 1
+fi
+
+
+# Signature verification of the binary package
+echo "Signature verification of the "$g_pkg_type" package "$g_pkg_name
+
+ccsd-check "${g_pkg_name}" dev_sign -r '[_|-|[:alnum:]]+-DEV[_|-|[:alnum:]]+' \
+		-k "${g_cryptolib_private_key_file}" \
+		|| error_treatment "ccsd-check"
+
+pkg-sign -i $g_pkg_name -r $g_repository_svn -c $g_public_key -k $g_private_key -C ${g_force}
+
+exit 0

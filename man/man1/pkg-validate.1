@@ -1,0 +1,55 @@
+.\" Process this file with
+.\" groff -man -Tascii pkg-validate.1
+.\"
+.TH PKG-VALIDATE 1 "AUGUST 2007" Linux "User Manuals"
+.SH NAME
+pkg-validate \- validates a package 
+.SH SYNOPSIS
+.B pkg-validate [-h] [-v] [-c
+.I cert
+.B ] [-k
+.I key]
+.B -i
+.I input-package
+.B -l
+.I crypto-lib-key
+.B -r
+.I svn-repository
+.SH DESCRIPTION
+.B pkg-validate
+verifies the signature of 
+.I input-package
+, then validates 
+.I input-package
+using 
+.I key
+private key file and
+.I cert
+public key file, and finally imports the validated package into the
+.I svn-repository
+Subversion repository.
+The users allowed to validate a package are the controlers : they are recognized thanks to their private key filenames.
+.SH MANDATORY PARAMETERS
+.IP "-i input-package"
+Specify the input binary package to validate.
+.IP "-l crypto-lib-key"
+Specify the key used to connect the cryptographical library.
+.IP "-r svn-repository"
+Give the Subversion repository URL where the obtained validated package must be stored.
+.SH OPTIONS
+.IP -h
+Display the help of the command.
+.IP -v
+Display the version of the tool.
+.IP "-k key"
+Specify the CCSD private key used to validate the input package.
+.IP "-c cert"
+Specify the public key of the user who makes the signature.
+.SH RETURN VALUE
+In case of error, 1 is returned. Otherwise, the command returns 0.
+.SH AUTHOR
+EADS Defence And Security Systems
+.SH "SEE ALSO"
+.BR create-sign (1),
+.BR verify-sign (1),
+.BR pkg-sign (1)
